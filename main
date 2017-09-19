@@ -1,0 +1,1284 @@
+#include <GL/freeglut.h>
+#include <stdlib.h>
+#include <cmath>
+#include <iostream>
+using namespace std;
+
+static int slices = 16;
+static int stacks = 16;
+
+int i,z;
+int ejex=15,ejey=180,ejez=0;
+//variables para que la escena se traslade según como queramos.
+float puntovistax=0.0,puntovistay=-40.0,puntovistaz=180.0;
+
+
+
+
+const GLfloat light_ambient[]  = { 0.2f, 0.2f, 0.2f, 1.0f };
+const GLfloat light_diffuse[]  = { 1.0f, 1.0f, 1.0f, 1.0f };
+const GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+const GLfloat light_position[] = { 2.0f, 5.0f, 5.0f, 0.0f };
+
+const GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f };
+const GLfloat mat_diffuse[]    = { 0.8f, 0.8f, 0.8f, 1.0f };
+const GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f };
+const GLfloat high_shininess[] = { 100.0f };
+
+int AngAA = 0;
+float AngDI = 0;
+
+
+//Variables para animación del PACMAN
+float mov_general = -100;
+
+float distancia_recorrido_circular=50;
+
+float vel_brazo = 0.9;
+float vel_pierna = 3.1;
+
+float brazo_ang_1=20;
+int bandera1_brazo=0;
+int bandera2_brazo=1;
+
+float pierna_ang_1=-30;
+int bandera1_pierna=0;
+int bandera2_pierna=1;
+//////////////////////////////////////////
+//Variables para la animación del Fantasma
+float mov_horizontal =-30 ;
+float mov = 0.56; //estaba en 0.16, pero muy lento
+int bandera1_movh = 0;
+int bandera2_movh = 1;
+float v_a_f = 0;
+float v_a_p = 2;
+
+
+
+
+
+void arbol(int a,int b)
+{
+
+    glPushMatrix();
+    glTranslated(a,5,b);
+
+    glPushMatrix();
+    glColor3f(0.60,0.40,0.12);
+    glRotated(90,1,0,0);
+    glScalef(0.3,0.8,0.8);
+    glutSolidCylinder(3,6,20,20);
+    glRotated(180,0,1,0);
+
+    for(i=0;(12-i/2)>=0;i+=1)
+    {
+    glColor3d(0,1,0);
+    glPushMatrix();
+    glTranslated(0,0,-3);
+    glRotated(0,0,1,0);
+    glTranslated(0,0,0.5*i);
+    glutSolidTorus(0.5,12-i/2,slices,stacks);
+    glPopMatrix();
+    }
+    glPopMatrix();
+    glPopMatrix();
+}
+
+
+void dedo(float t)
+{
+    glPushMatrix();
+    glScaled(1,t,1);
+    glRotated(-90,1,0,0);
+    glColor3f(1,0,0);
+    glutSolidCylinder(0.5,5,20,20);
+    glTranslated(0,0,5);
+    glutSolidSphere(0.5,20,20);
+    glPopMatrix();
+
+}
+
+void mano_brazo()
+{
+    //antebrazo
+    glPushMatrix();
+    glColor3f(1,1,0);
+    glTranslated(-4,-6,0);
+    glRotated(90,0,1,0);
+    glutSolidCylinder(0.8,4,20,20);
+    glPopMatrix();
+
+
+    //Codo
+    glPushMatrix();
+    glTranslated(0,-6,0);
+    glRotated(-brazo_ang_1,0,0,1);
+    //glRotated(brazo_ang_2,0,0,1);
+    glutSolidSphere(1,20,20);
+
+
+    //Brazo
+    glTranslated(0,6,0);
+    glPushMatrix();
+    glColor3f(1,1,0);
+    glTranslated(0,-2,0);
+    glRotated(90,1,0,0);
+    glutSolidCylinder(0.8,4,20,20);
+    glPopMatrix();
+
+
+    //Palma de la mano: Pacman
+    glPushMatrix();
+    GLdouble eqn[4] = {0,1,0,2};
+    GLdouble eqn2[4] = {0,-1,0,2};
+    glClipPlane(GL_CLIP_PLANE0,eqn);
+    glClipPlane(GL_CLIP_PLANE1,eqn2);
+    glEnable(GL_CLIP_PLANE0);
+    glEnable(GL_CLIP_PLANE1);
+    glColor3f(1,0,0);
+    glScaled(3,3,1);
+    glutSolidSphere(1,20,20);
+    glDisable(GL_CLIP_PLANE0);
+    glDisable(GL_CLIP_PLANE1);
+    glPopMatrix();
+
+    //Índice
+    glPushMatrix();
+    glScaled(1,0.9,1);
+    glTranslated(-1.7,0,0);
+    dedo(1);
+    glPopMatrix();
+
+    //Medio
+    glPushMatrix();
+    glScaled(1,1,1);
+    glTranslated(-0.5,0,0);
+    dedo(1);
+    glPopMatrix();
+
+    //Anular
+    glPushMatrix();
+    glScaled(1,0.92,1);
+    glTranslated(0.8,0,0);
+    dedo(1);
+    glPopMatrix();
+
+    //Meñique
+    glPushMatrix();
+    glScaled(1,0.78,1);
+    glTranslated(2,0,0);
+    dedo(1);
+    glPopMatrix();
+
+    //Pulgar
+    glPushMatrix();
+    glRotated(45,0,0,1);
+    glScaled(1,0.78,1);
+    glTranslated(-2,0,0);
+    dedo(1);
+    glPopMatrix();
+
+    //Pulsera
+    glPushMatrix();
+    glTranslated(0,-2,0);
+    glScaled(2.5,0.4,1.4);
+    glutSolidSphere(1,20,20);
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+void cuerpo()
+{
+
+    //Cuerpo
+    glPushMatrix();
+    glColor3f(1,1,0);
+    glutSolidSphere(10,80,80);
+    glPopMatrix();
+
+    //ojo_izquierdo
+    glPushMatrix();
+    glColor3f(1,1,1);
+    glTranslated(4,3,8);
+    glScaled(1.2,1.7,1);
+    glutSolidSphere(2,100,100);
+    glPopMatrix();
+
+    //Pupila izquierda
+    glPushMatrix();
+    glColor3f(0,1,1);
+    glTranslated(4,3,9);
+    glScaled(0.8,1.3,0.6);
+    glutSolidSphere(2,100,100);
+    glPopMatrix();
+
+    //ojo_derecho
+    glPushMatrix();
+    glColor3f(1,1,1);
+    glTranslated(-4,3,8);
+    glScaled(1.2,1.7,1);
+    glutSolidSphere(2,40,40);
+    glPopMatrix();
+
+    //Pupila derecha
+    glPushMatrix();
+    glColor3f(0,1,1);
+    glTranslated(-4,3,9);
+    glScaled(0.8,1.3,0.6);
+    glutSolidSphere(2,100,100);
+    glPopMatrix();
+
+    //Boca
+    glPushMatrix();
+    glTranslated(0,-1,2);
+    glScaled(0.85,0.8,0.8);
+    GLdouble eqn3[4] = {0,-1,0,0};
+    glClipPlane(GL_CLIP_PLANE0,eqn3);
+    glEnable(GL_CLIP_PLANE0);
+    glColor3f(0,0,0);
+    glutSolidSphere(10.2,200,200);
+    glDisable(GL_CLIP_PLANE0);
+    glPopMatrix();
+
+    //Nariz
+    glPushMatrix();
+    glColor3f(1,1,0);
+    glTranslated(0,0,9);
+    glutSolidCylinder(1.5,2,20,20);
+    glTranslated(0,0,3);
+    glutSolidSphere(2,20,20);
+    glPopMatrix();
+
+    //Cejas
+    glPushMatrix();
+    glTranslated(-4,6,8);
+    glScaled(0.8,1,1);
+    GLdouble eqn4[4] = {0,1,0,0};
+    glClipPlane(GL_CLIP_PLANE0,eqn4);
+    glEnable(GL_CLIP_PLANE0);
+    glColor3f(0,0,0);
+    glutSolidTorus(0.15,3,200,200);
+    glDisable(GL_CLIP_PLANE0);
+    glPopMatrix();
+
+    //Cejas
+    glPushMatrix();
+    glTranslated(4,6,8);
+    glScaled(0.8,1,1);
+    glClipPlane(GL_CLIP_PLANE0,eqn4);
+    glEnable(GL_CLIP_PLANE0);
+    glColor3f(0,0,0);
+    glutSolidTorus(0.15,3,200,200);
+    glDisable(GL_CLIP_PLANE0);
+    glPopMatrix();
+
+    //hombros
+    glPushMatrix();
+    glColor3f(1,1,0);
+    glTranslated(10,0,0);
+    glutSolidSphere(1,40,40);
+    glTranslated(-20,0,0);
+    glutSolidSphere(1,40,40);
+    glPopMatrix();
+
+    //muslos
+    glPushMatrix();
+    glColor3f(1,1,0);
+    glTranslated(4,-9,0);
+    glutSolidSphere(1.5,40,40);
+    glTranslated(-8,0,0);
+    glutSolidSphere(1.5,40,40);
+    glPopMatrix();
+
+}
+
+void pierna_zapato_derecha()
+{
+    //Rodilla
+    glPushMatrix();
+    glColor3f(1,1,0);
+    glTranslated(0,9,0);
+    glRotated(pierna_ang_1,1,0,0);
+    glutSolidSphere(1,20,20);
+
+    glTranslated(0,-9,0);
+    //pierna
+    glPushMatrix();
+    glColor3f(1,1,0);
+    glTranslated(0,9,0);
+    glRotated(90,1,0,0);
+    glutSolidCylinder(0.8,4,20,20);
+    glPopMatrix();
+
+    //Zapato
+    glPushMatrix();
+    glColor3f(1,0,0);
+    glutSolidCylinder(3,10,20,20);
+    glTranslated(0,0,10);
+    glutSolidSphere(3.3,20,20);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslated(0,-3,0);
+    glRotated(-90,1,0,0);
+    glutSolidCylinder(3,8,20,20);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslated(0,-2.2,0);
+    glScaled(1,0.3,1);
+    glutSolidCube(6);
+    glPopMatrix();
+
+    //pazador
+    glPushMatrix();
+    glColor3f(1,1,1);
+    GLdouble eqn5[4] = {0,1,0,0};
+    glClipPlane(GL_CLIP_PLANE0,eqn5);
+    glEnable(GL_CLIP_PLANE0);
+    glTranslated(0,0,4);
+    glScaled(0.5,1,1);
+    glutSolidTorus(0.2,4,20,20);
+    glTranslated(0,0,1);
+    glutSolidTorus(0.2,4,20,20);
+    glTranslated(0,0,1);
+    glutSolidTorus(0.2,4,20,20);
+    glTranslated(0,0,1);
+    glutSolidTorus(0.2,4,20,20);
+    glTranslated(0,0,1);
+    glutSolidTorus(0.2,4,20,20);
+    glTranslated(0,0,1);
+    glutSolidTorus(0.2,4,20,20);
+    glDisable(GL_CLIP_PLANE0);
+    glPopMatrix();
+
+
+    //Adornos
+    glPushMatrix();
+    glColor3f(1,1,1);
+    glTranslated(3,2,-1);
+    glScaled(0.1,3.2,1.4);
+    glutSolidCube(2);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(1,1,1);
+    glTranslated(-3,2,-1);
+    glScaled(0.1,3.2,1.4);
+    glutSolidCube(2);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(1,1,1);
+    glTranslated(0,3,6);
+    glScaled(0.8,0.1,3.2);
+    glutSolidCube(2);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(1,1,1);
+    glTranslated(0,2,3);
+    glScaled(0.8,3.2,0.1);
+    glutSolidCube(2);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(1,0,0);
+    glTranslated(0,5,0);
+    glRotated(90,1,0,0);
+    glutSolidTorus(0.8,3.2,20,20);
+    glPopMatrix();
+
+    glPopMatrix();
+
+
+
+
+
+}
+
+void pierna_zapato_izquierda()
+{
+    //Rodilla
+    glPushMatrix();
+    glColor3f(1,1,0);
+    glTranslated(0,9,0);
+    glRotated(-pierna_ang_1,1,0,0);
+    glutSolidSphere(1,20,20);
+
+    glTranslated(0,-9,0);
+    //pierna
+    glPushMatrix();
+    glColor3f(1,1,0);
+    glTranslated(0,9,0);
+    glRotated(90,1,0,0);
+    glutSolidCylinder(0.8,4,20,20);
+    glPopMatrix();
+
+    //Zapato
+    glPushMatrix();
+    glColor3f(1,0,0);
+    glutSolidCylinder(3,10,20,20);
+    glTranslated(0,0,10);
+    glutSolidSphere(3.3,20,20);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslated(0,-3,0);
+    glRotated(-90,1,0,0);
+    glutSolidCylinder(3,8,20,20);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslated(0,-2.2,0);
+    glScaled(1,0.3,1);
+    glutSolidCube(6);
+    glPopMatrix();
+
+    //pazador
+    glPushMatrix();
+    glColor3f(1,1,1);
+    GLdouble eqn5[4] = {0,1,0,0};
+    glClipPlane(GL_CLIP_PLANE0,eqn5);
+    glEnable(GL_CLIP_PLANE0);
+    glTranslated(0,0,4);
+    glScaled(0.5,1,1);
+    glutSolidTorus(0.2,4,20,20);
+    glTranslated(0,0,1);
+    glutSolidTorus(0.2,4,20,20);
+    glTranslated(0,0,1);
+    glutSolidTorus(0.2,4,20,20);
+    glTranslated(0,0,1);
+    glutSolidTorus(0.2,4,20,20);
+    glTranslated(0,0,1);
+    glutSolidTorus(0.2,4,20,20);
+    glTranslated(0,0,1);
+    glutSolidTorus(0.2,4,20,20);
+    glDisable(GL_CLIP_PLANE0);
+    glPopMatrix();
+
+
+    //Adornos
+    glPushMatrix();
+    glColor3f(1,1,1);
+    glTranslated(3,2,-1);
+    glScaled(0.1,3.2,1.4);
+    glutSolidCube(2);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(1,1,1);
+    glTranslated(-3,2,-1);
+    glScaled(0.1,3.2,1.4);
+    glutSolidCube(2);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(1,1,1);
+    glTranslated(0,3,6);
+    glScaled(0.8,0.1,3.2);
+    glutSolidCube(2);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(1,1,1);
+    glTranslated(0,2,3);
+    glScaled(0.8,3.2,0.1);
+    glutSolidCube(2);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(1,0,0);
+    glTranslated(0,5,0);
+    glRotated(90,1,0,0);
+    //glutSolidTorus(1.3,2.6,20,20);
+    glutSolidTorus(0.8,3.2,20,20);
+    glPopMatrix();
+
+    glPopMatrix();
+
+
+
+
+
+}
+
+void pacman_completo(){
+
+        cuerpo();
+    glPushMatrix();
+    glTranslated(16,4,0);
+    glRotated(-20,0,0,1);
+    mano_brazo();
+    glPopMatrix();
+
+    glPushMatrix();
+    glRotated(180,0,1,0);
+    glTranslated(16,4,0);
+    glRotated(-20,0,0,1);
+    mano_brazo();
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslated(-4,-16,0);
+    glScaled(0.8,0.8,0.8);
+    pierna_zapato_izquierda();
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslated(4,-16,0);
+    glScaled(0.8,0.8,0.8);
+    pierna_zapato_derecha();
+    glPopMatrix();
+
+
+//    mano_brazo();
+
+}
+
+void fantasma()
+{
+
+
+
+    GLdouble eqn_f[4]= {-1.0,0.0,0.0,0.0};
+    GLdouble eqn1_f[4]= {1.0,0.0,0.0,0.0};
+    GLdouble eqn2_f[4]= {0.0,-1.0,0.0,0.0};
+    GLdouble eqn3_f[4]= {0.0,1.0,0.0,-1.0};
+    GLdouble eqn4_f[4]= {1.0,0.0,-1.0,0.0};
+    GLdouble eqn5_f[4]= {1.0,0.0,1.0,0.0};
+
+
+    glPushMatrix();
+    glTranslated(0,-18.2,0);
+    glScaled(2.05,2.05,2.05);
+    for(float i=0; i<360;i=i+45){
+        glPushMatrix();
+        glRotated(i,0,1,0);
+        glTranslated(2.9,2.2,0);
+        glRotated(90,1,0,0);
+        glutSolidCone(2,3,15,15);
+        glPopMatrix();
+    }
+    glPopMatrix();
+
+    glPushMatrix();
+    glClipPlane(GL_CLIP_PLANE0,eqn3_f);
+    glEnable(GL_CLIP_PLANE0);
+    glutSolidSphere(10,40,40);
+    glDisable(GL_CLIP_PLANE0);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslated(0,1,0);
+    glRotated(90,2,0,0);
+    glutSolidCylinder(10,15,40,40);
+    glPopMatrix();
+
+
+    glPushMatrix();//////////*******
+    glTranslated(7.5,2,4);
+    glScaled(0.5,0.5,0.5);
+
+    glPushMatrix();
+    glTranslated(0,1,0);
+    glColor3f(1,1,1);
+    glutSolidSphere(5,20,120);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslated(4,1,0);
+    glColor3f(0,0,0);
+    glutSolidSphere(2,20,120);
+    glPopMatrix();
+
+    glPopMatrix();//////////******
+
+    glPushMatrix();///////////---------
+    glTranslated(7.5,2,-4);
+    glScaled(0.5,0.5,0.5);
+
+    glPushMatrix();
+    glTranslated(0,1,0);
+    glColor3f(1,1,1);
+    glutSolidSphere(5,20,120);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslated(4,1,0);
+    glColor3f(0,0,0);
+    glutSolidSphere(2,20,120);
+    glPopMatrix();
+
+    glPopMatrix();///////////---------
+
+    glPushMatrix();/////·················
+    glTranslated(8,3.5,-4);
+    glRotated(90,0,0,1);
+
+    glPushMatrix();
+    glClipPlane(GL_CLIP_PLANE0,eqn4_f);
+    glClipPlane(GL_CLIP_PLANE1,eqn5_f);
+    glEnable(GL_CLIP_PLANE0);
+    glEnable(GL_CLIP_PLANE1);
+    glColor3f(0,0,0);
+    glRotated(90,1,0,0);
+    glutSolidTorus(0.3,3,50,50);
+    glDisable(GL_CLIP_PLANE0);
+    glDisable(GL_CLIP_PLANE1);
+    glPopMatrix();
+
+    glPopMatrix();///////···················
+
+    glPushMatrix();
+    glTranslated(8,3.5,4);
+    glRotated(90,0,0,1);
+    glPushMatrix();
+    glClipPlane(GL_CLIP_PLANE0,eqn4_f);
+    glClipPlane(GL_CLIP_PLANE1,eqn5_f);
+    glEnable(GL_CLIP_PLANE0);
+    glEnable(GL_CLIP_PLANE1);
+    glColor3f(0,0,0);
+    glRotated(90,1,0,0);
+    glutSolidTorus(0.3,3,50,50);
+    glDisable(GL_CLIP_PLANE0);
+    glDisable(GL_CLIP_PLANE1);
+    glPopMatrix();
+    glPopMatrix();
+}
+
+void fantasma_mov_x()
+{
+    if (mov_general==-100){
+    glPushMatrix();
+    glTranslated(mov_horizontal,0,0);
+    //Para que el fantasma gire al terminar su recorrido
+        if (bandera2_movh == 0 ){
+            glRotated(180,0,1,0);
+
+        }
+
+
+    fantasma();
+    glPopMatrix();
+
+    }
+}
+
+
+static void resize(int width, int height){
+
+const float ar = (float) width / (float) height;
+
+glViewport(0, 0, width, height);
+glMatrixMode(GL_PROJECTION);
+glLoadIdentity();
+glFrustum(-ar, ar, -1.0, 1.0, 3.0, 390.0);
+
+glMatrixMode(GL_MODELVIEW);
+glLoadIdentity();
+}
+
+
+void specialFunc( int key, int x, int y )
+{
+switch( key ){
+
+//giro a la izquierda
+case GLUT_KEY_LEFT:
+ejey--;
+break;
+
+// giro a la derecha.
+case GLUT_KEY_RIGHT:
+ejey++;
+break;
+
+// mirar hacia arriba.
+case GLUT_KEY_UP:
+ejex--;
+break;
+
+// mirar hacia abajo
+case GLUT_KEY_DOWN:
+ejex++;
+break;
+}
+}
+
+void keyboard(unsigned char key, int x, int y){
+
+GLfloat angulo_camara;
+switch(key){
+
+// Zoom: movimiento hacia adelante
+case 'g': case 'G':
+angulo_camara = ( ( -ejey + 180 ) * M_PI / 180.0 );
+puntovistax -= 2*sin( angulo_camara );
+puntovistaz -= 2*cos( angulo_camara );
+break;
+
+// desplazamiento hacia el lado izquierdo
+case 'c': case 'C':
+angulo_camara = ( ( -ejey + 270 ) * M_PI / 180.0 );
+puntovistax -= 2*sin( angulo_camara );
+puntovistaz -= 2*cos( angulo_camara );
+break;
+
+// desplazamiento hacia el lado derecho
+case 'b': case 'B':
+angulo_camara = ( ( -ejey + 90 ) * M_PI / 180.0 );
+puntovistax -= 2*sin( angulo_camara );
+puntovistaz -= 2*cos( angulo_camara );
+break;
+
+// retroceder: desplazamiento hacia atrás
+case 'v': case 'V':
+angulo_camara = ( ( -ejey + 0 ) * M_PI / 180.0 );
+puntovistax -= 2*sin( angulo_camara );
+puntovistaz -= 2*cos( angulo_camara );
+break;
+
+//subir: desplazamiento hacia arriba
+case 'k': case 'K':
+puntovistay=puntovistay-2;
+break;
+
+//bajar: desplazamiento hacia abajo
+case 'm': case 'M':
+puntovistay=puntovistay+2;
+break;
+
+//rotar en el eje z
+case 'z': case 'Z':
+ejez++;
+break;
+case 'x': case 'X':
+ejez--;
+break;
+
+case 'p': case 'P':  if (v_a_f>=-1) v_a_f = v_a_f + 0.3;
+break;
+
+case 'o': case 'O': if (v_a_f>=0) v_a_f = v_a_f - 0.3;
+break;
+
+case '2':
+    if (v_a_p>=0) v_a_p = v_a_p + 1;
+
+break;
+
+case '1':
+    if (v_a_p>0) v_a_p = v_a_p - 1;
+
+break;
+
+//Esc salir
+case 27: case'q': case 'Q':
+exit(0);
+break;
+}
+
+}
+
+void Laberinto(){
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(0,0,-120);
+    glScalef(3,0.1,0.2);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(0,0,120);
+    glScalef(3,0.1,0.2);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(42,0,75);
+    glScalef(0.2,0.1,3);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(42.5,0,-75);
+    glScalef(0.2,0.1,3);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(-42.5,0,75);
+    glScalef(0.2,0.1,3);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(-42.5,0,-75);
+    glScalef(0.2,0.1,3);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(-20,0,0);
+    glScalef(0.2,0.1,2);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(20,0,0);
+    glScalef(0.2,0.1,2);
+    glutSolidCube(30);
+    glPopMatrix();
+
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(0,0,-30);
+    glScalef(1.53,0.1,0.2);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(0,0,100);
+    glScalef(0.2,0.1,1);
+    glutSolidCube(30);
+    glPopMatrix();
+
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(0,0,-90);
+    glScalef(0.2,0.1,0.5);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(0,0,-75);
+    glScalef(0.5,0.1,0.2);
+    glutSolidCube(30);
+    glPopMatrix();
+
+
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(28,0,-90);
+    glScalef(0.2,0.1,0.5);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(23.5,0,-80);
+    glScalef(0.5,0.1,0.2);
+    glutSolidCube(30);
+    glPopMatrix();
+
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(-28,0,-90);
+    glScalef(0.2,0.1,0.5);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(-23.5,0,-80);
+    glScalef(0.5,0.1,0.2);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(0,0,-50);
+    glScalef(0.5,0.1,0.2);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(20,0,-60);
+    glScalef(0.2,0.1,0.5);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(-20,0,-60);
+    glScalef(0.2,0.1,0.5);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(20,0,60);
+    glScalef(0.2,0.1,0.5);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(-20,0,60);
+    glScalef(0.2,0.1,0.5);
+    glutSolidCube(30);
+    glPopMatrix();
+
+    glPushMatrix();
+    glColor3f(0,0,1);
+    glTranslatef(0,0,50);
+    glScalef(0.5,0.1,0.2);
+    glutSolidCube(30);
+    glPopMatrix();
+}
+
+static void display(void){
+
+    glPushMatrix(); //PRINCIPAL PUSH MATRIX
+    glRotated(ejex,1,0,0);
+    glRotated(ejey,0,1,0);
+    glRotated(ejez,0,0,1);
+
+    glTranslated(0,0,puntovistaz);
+    glTranslated(0,puntovistay,0);
+    glTranslated(puntovistax,0,0);
+
+
+
+    int i;
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glColor3d(1,0,0);
+
+
+    glClearColor(0,1,1,0);
+
+    for(i=0,z=150;i<6;i++){z-=50; arbol(-50,z);}
+    for(i=0,z=150;i<6;i++){z-=50; arbol(50,z);}
+    for(i=0,z=75;i<5;i++){z-=25; arbol(z,150);}
+
+////PISO:
+    glPushMatrix();
+    for(float u=-150;u<=150;u=u+15) {
+    glColor3f(0,1,0);
+    glBegin(GL_LINES);
+    glVertex3f(-150,0,u);
+    glVertex3f(150,0,u);
+    glEnd();
+     }
+      for(float uu=-150;uu<=150;uu=uu+15) {
+    glColor3f(0,1,0);
+    glBegin(GL_LINES);
+    glVertex3f(uu,0,-150);
+    glVertex3f(uu,0,150);
+    glEnd();
+     }
+     glPopMatrix();
+
+////////
+
+////Laberinto:
+    glPushMatrix();
+    glTranslated(0,3,0);
+    Laberinto();
+    glPopMatrix();
+
+    //Animación de la persecución central
+
+    glPushMatrix();
+    glTranslated(0,5,0); //Para que esté arriba del Piso
+    glScaled(0.3,0.3,0.3);
+
+    if (mov_general==-100){
+        glPushMatrix();
+        //glTranslated(0.7*distancia_recorrido_circular*cos(AngAA*M_PI/180),0,1.3*distancia_recorrido_circular*sin(AngAA*M_PI/180));
+        glTranslated(0.7*distancia_recorrido_circular*cos(AngAA*M_PI/180),0,1.3*distancia_recorrido_circular*sin(AngAA*M_PI/180));
+        glRotated(-AngDI,0,1,0);
+        //glColor3f(1,0,0);
+        pacman_completo();
+        glPopMatrix();
+
+    }
+
+        //float esc=0.3; //escala
+    if (mov_general==-100){
+    glPushMatrix();
+    glTranslated(0.7*distancia_recorrido_circular*cos(AngAA*M_PI/180 + 5),0,1.3*distancia_recorrido_circular*sin(AngAA*M_PI/180 + 5));
+
+    glRotated(-AngDI,0,1,0);
+    glColor3f(1,0.5,0);
+    glTranslated(0,0,0);
+    glRotated(10,0,1,0);
+    fantasma();
+    glPopMatrix();
+
+    }
+    glPopMatrix();
+
+    //Fantasma Moviéndose Nº1
+
+    glPushMatrix();
+    glTranslated(0,5,0); //Para que esté arriba del Piso
+    glScaled(0.3,0.3,0.3);
+    glTranslated(0,0,150);
+    glColor3f(1,0,0);
+    fantasma_mov_x();
+    glPopMatrix();
+
+    //Fantasma Moviéndose Nº2
+    glPushMatrix();
+    glTranslated(0,5,0); //Para que esté arriba del Piso
+    glScaled(0.3,0.3,0.3);
+    glTranslated(0,0,220);
+    glColor3f(0,1,0);
+    fantasma_mov_x();
+    glPopMatrix();
+
+    //Fantasma Moviéndose Nº3
+    glPushMatrix();
+    glTranslated(0,5,0); //Para que esté arriba del Piso
+    glScaled(0.3,0.3,0.3);
+    glTranslated(0,0,-220);
+    glColor3f(1,1,0);
+    fantasma_mov_x();
+    glPopMatrix();
+
+    //Fantasma Moviéndose Nº4
+    glPushMatrix();
+    glTranslated(0,5,0); //Para que esté arriba del Piso
+    glTranslated(-37,0,0);
+    glScaled(0.3,0.3,0.3);
+    //Cuando rota también cambia de trayectoria al eje z, por eso no es necesario crear fantasma_mov_z()
+    glRotated(90,0,1,0);
+    glColor3f(0.9,1,0.89);
+    fantasma_mov_x();
+    glPopMatrix();
+
+    //Fantasma Moviéndose Nº5
+    glPushMatrix();
+    glTranslated(0,5,0); //Para que esté arriba del Piso
+    glTranslated(37,0,0);
+    glScaled(0.3,0.3,0.3);
+    glRotated(90,0,1,0);
+    glColor3f(0,0,0);
+    fantasma_mov_x();
+    glPopMatrix();
+
+    //Fantasma Moviéndose Nº6
+    glPushMatrix();
+    glTranslated(0,5,0); //Para que esté arriba del Piso
+    glScaled(0.3,0.3,0.3);
+    glTranslated(80,0,320);
+    glColor3f(0,0.2,0.5);
+    fantasma_mov_x();
+    glPopMatrix();
+
+    //Fantasma Moviéndose Nº7
+    glPushMatrix();
+    glTranslated(0,5,0); //Para que esté arriba del Piso
+    glScaled(0.3,0.3,0.3);
+    glTranslated(-80,0,320);
+    glColor3f(1,0,1);
+    fantasma_mov_x();
+    glPopMatrix();
+
+    //Fantasma Moviéndose Nº8
+    glPushMatrix();
+    glTranslated(0,5,0); //Para que esté arriba del Piso
+    glScaled(0.3,0.3,0.3);
+    glTranslated(80,0,-350);
+    glColor3f(0.3,0.7,0.2);
+    fantasma_mov_x();
+    glPopMatrix();
+
+    //Fantasma Moviéndose Nº9
+    glPushMatrix();
+    glTranslated(0,5,0); //Para que esté arriba del Piso
+    glScaled(0.3,0.3,0.3);
+    glTranslated(-80,0,-350);
+    glColor3f(0.5,0.1,0.5);
+    fantasma_mov_x();
+    glPopMatrix();
+
+
+
+
+
+
+
+
+glPopMatrix();//FIN DEL PRINCIPAL PUSH MATRIX
+
+
+
+
+
+    glFlush ();
+    glutSwapBuffers();
+}
+
+static void idle(void){
+    /// Animación para el movimiento de los Brazos-----------------------
+
+    if( brazo_ang_1<70 && bandera1_brazo==0)
+        brazo_ang_1=brazo_ang_1+vel_brazo + v_a_p;
+
+    if(brazo_ang_1>70 && bandera1_brazo==0)
+      {
+        bandera2_brazo=0;
+        bandera1_brazo=1;
+      }
+
+    if(brazo_ang_1>20 && bandera2_brazo==0)
+        brazo_ang_1=brazo_ang_1-vel_brazo - v_a_p;
+
+//  //Se reinicia el proceso cuando brazo_ang_1=20
+    if(brazo_ang_1<=20)
+    {    bandera1_brazo=0;
+         bandera2_brazo=1;
+    }
+
+/// Animación para el movimiento de las piernas-----------------------------
+    if( pierna_ang_1<60 && bandera1_pierna==0)
+        pierna_ang_1=pierna_ang_1+vel_pierna + v_a_p;
+
+    if(pierna_ang_1>60 && bandera1_pierna==0)
+      {
+        bandera2_pierna=0;
+        bandera1_pierna=1;
+      }
+
+    if(pierna_ang_1>-30 && bandera2_pierna==0)
+        pierna_ang_1=pierna_ang_1-vel_pierna - v_a_p;
+
+//  //Se reinicia el proceso cuando brazo_ang_1=20
+    if(pierna_ang_1<=-30)
+    {    bandera1_pierna=0;
+         bandera2_pierna=1;
+    }
+
+/// Animación - Movimiento horizontal
+
+    if( mov_horizontal<40 && bandera1_movh==0)
+        mov_horizontal=mov_horizontal+mov + v_a_f;
+
+    if(mov_horizontal>40 && bandera1_movh==0)
+      {
+
+        bandera2_movh=0;
+        bandera1_movh=1;
+
+      }
+
+    if(mov_horizontal>-30 && bandera2_movh==0)
+        mov_horizontal=mov_horizontal-mov -v_a_f;
+
+
+    if(mov_horizontal<=-30)
+    {    bandera1_movh=0;
+         bandera2_movh=1;
+    }
+
+
+    if(AngAA<360)
+    AngAA=AngAA + v_a_p;
+    else AngAA=0;
+
+    if(AngDI<360)
+    AngDI=AngDI + v_a_p;
+    else AngDI=0;
+
+
+    glutPostRedisplay();
+}
+
+
+int main(int argc, char *argv[])
+{
+glutInit(&argc, argv);
+glutInitWindowSize(1024,768);
+glutInitWindowPosition(10,10);
+glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
+
+glutCreateWindow(" Escena Animada - Pacman ");
+
+glutReshapeFunc(resize);
+glutDisplayFunc(display);
+glutKeyboardFunc(keyboard);
+
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+    glEnable(GL_LIGHT0);
+    glEnable(GL_NORMALIZE);
+    glEnable(GL_COLOR_MATERIAL);
+    glEnable(GL_LIGHTING);
+
+    glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT,   mat_ambient);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE,   mat_diffuse);
+    glMaterialfv(GL_FRONT, GL_SPECULAR,  mat_specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
+
+    cout<<"\n---PROYECTO FINAL DE COMPUTACION GRAFICA 2015-II---\n";
+    cout<<"\tESCENA ANIMADA - PACMAN\n\n";
+    cout<<"Integrantes:\n\n";
+    cout<<"-Arotinco Gomez, William Michael";
+    cout<<"\n-Flores Gonzales, Julio";
+    cout<<"\n-Manosalva Lopez, Anthony Steve\n\n";
+    cout<<"Instrucciones para mover la escena: \n";
+    cout<<"G: Avanzar\n";
+    cout<<"V: Retroceder\n";
+    cout<<"C: Movimiento Hacia La Izquierda\n";
+    cout<<"B: Movimiento Hacia La Derecha\n";
+    cout<<"K: Subir\n";
+    cout<<"M: Bajar\n";
+    cout<<"Z: Rotar Hacia La Derecha\n";
+    cout<<"X: Rotar Hacia La Izquierda\n";
+
+
+    cout<<"UP: Mirar Hacia Arriba\n";
+    cout<<"DOWN: Mirar Hacia Abajo\n";
+    cout<<"LEFT: Mirar Hacia La Izquierda\n";
+    cout<<"RIGHT: Mirar Hacia La Derecha\n\n";
+
+
+    cout<<"VELOCIDAD DE ANIMACION\n";
+    cout<<"P: AUMENTAR VELOCIDAD DE FANTASMAS\n";
+    cout<<"O: DISMINUIR VELOCIDAD DE FANTASMAS\n\n";
+
+    cout<<"VELOCIDAD DE PERSECUCION\n";
+    cout<<"1: DISMINUIR VELOCIDAD DE PERSECUCION\n";
+    cout<<"2: AUMENTAR VELOCIDAD DE PERSECUCION\n";
+    cout<<"Q o ESC Para Abandonar...\n";
+
+
+
+
+
+
+glutSpecialFunc( specialFunc );
+glutIdleFunc(idle);
+
+glutMainLoop();
+
+return EXIT_SUCCESS;
+}
